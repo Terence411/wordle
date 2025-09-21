@@ -2,8 +2,11 @@ const { Client } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { spawn } = require('child_process');
 
-const client = new Client();
-const GROUP_NAME = "Wordle Group"; // <-- replace with your group's exact name
+// const client = new Client();
+const client = new Client({
+    authStrategy: new LocalAuth() // saves session in .wwebjs_auth
+});
+const GROUP_NAME = "Wordle Group";
 
 client.on('qr', qr => qrcode.generate(qr, { small: true }));
 client.on('ready', () => console.log('WhatsApp Bot Ready!'));
