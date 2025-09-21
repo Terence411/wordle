@@ -57,9 +57,6 @@ RUN pip3 install -r requirements.txt
 # Copy all project files
 COPY . .
 
-# Persist WhatsApp session in a volume
-VOLUME ["/app/.wwebjs_auth"]
-
 # Start bot
 CMD ["npm", "start"]
 

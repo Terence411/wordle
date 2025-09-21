@@ -4,8 +4,9 @@ const { spawn } = require('child_process');
 
 // const client = new Client();
 const client = new Client({
-    authStrategy: new LocalAuth() // saves session in .wwebjs_auth
+    authStrategy: new LocalAuth({ clientId: "wordle-bot" }) // session saved in .wwebjs_auth/wordle-bot
 });
+
 const GROUP_NAME = "Wordle Group";
 
 client.on('qr', qr => qrcode.generate(qr, { small: true }));
