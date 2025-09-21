@@ -1,2 +1,6 @@
 .wwebjs_cache/
+.wwebjs_auth/
+package-lock.json
+node_modules/
 wordle.db
+whatsapp-qr.png
