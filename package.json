@@ -6,7 +6,7 @@
     "start": "node bot.js"
   },
   "dependencies": {
-    "whatsapp-web.js": "^2.0.0",
+    "whatsapp-web.js": "^1.23.0",
     "qrcode-terminal": "^0.12.0"
   }
 }
