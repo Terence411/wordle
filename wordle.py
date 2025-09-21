@@ -1,8 +1,9 @@
 import re
 import sqlite3
-from datetime import datetime
+import datetime
 import sys
 import base64
+import requests
 
 DB_FILE = "wordle.db"
 
@@ -25,6 +26,28 @@ with conn:
 
 print("Database initialized.")
 
+def get_wordle_by_id(puzzle, start_date=None):
+    # If no date is given, start from today
+    if start_date is None:
+        date = datetime.date.today()
+    else:
+        date = datetime.date.fromisoformat(start_date)
+
+    while True:
+        url = f"https://www.nytimes.com/svc/wordle/v2/{date:%Y-%m-%d}.json"
+        response = requests.get(url).json()
+        current_puzzle = response["days_since_launch"]
+
+        # Debug print (optional)
+        print(f"Checking {date} -> ID {current_puzzle}")
+
+        if current_puzzle == puzzle:
+            return date
+        elif current_puzzle > puzzle:
+            date -= datetime.timedelta(days=1)
+        else:
+            date += datetime.timedelta(days=1)
+
 # --- Parse Wordle ---
 def parse_wordle(player, message):
     header_match = re.match(r"Wordle ([\d,]+) ([X\d])/(\d+)", message)
@@ -39,11 +62,12 @@ def parse_wordle(player, message):
 
     score_val = max_tries + 1 if score == "X" else int(score)
 
-    today = datetime.now()
-    month_key = today.strftime("%Y-%m")
-    
-    print(f"Parsed: {puzzle}, {player}, {score_val}, {max_tries}, {today}, {month_key}")
-    return (puzzle, player, score_val, max_tries, today.strftime("%Y-%m-%d"), month_key)
+    puzzle_date = get_wordle_by_id(puzzle)
+    puzzle_date_reformatted = puzzle_date.strftime("%Y-%m-%d")
+    month_key = puzzle_date.strftime("%B %Y")
+
+    print(f"Parsed: {puzzle}, {player}, {score_val}, {max_tries}, {puzzle_date_reformatted}, {month_key}")
+    return (puzzle, player, score_val, max_tries, puzzle_date_reformatted, month_key)
 
 # --- Save & generate leaderboard ---
 def save_and_report(parsed):
@@ -67,14 +91,17 @@ def leaderboard(puzzle_number):
     c.execute("SELECT player, score, max_tries FROM results WHERE puzzle=? ORDER BY score ASC", (puzzle_number,))
     rows = c.fetchall()
 
-    board = [f"🏆 Wordle {puzzle_number} Leaderboard"]
-    rank = 1
+    board = [f"🎯 Wordle {puzzle_number} Leaderboard"]
+    index = 1
+
+
     for player, score, max_tries in rows:
         if score > max_tries:
-            board.append(f"❌ {player} — X/{max_tries}")
+            board.append(f"{index}. {player} — X/{max_tries}")
         else:
-            board.append(f"{rank}. {player} — {score}/{max_tries}")
-            rank += 1
+            board.append(f"{index}. {player} — {score}/{max_tries}")
+        
+        index += 1
 
     print(f"Generated leaderboard for Wordle {puzzle_number}")
     return "\n".join(board)
@@ -89,22 +116,13 @@ def monthly_totals(month):
     for puzzle in puzzles:
         c.execute("SELECT player, score, max_tries FROM results WHERE puzzle=? ORDER BY score ASC", (puzzle,))
         rows = c.fetchall()
-        rank = 1
+        
         for player, score, max_tries in rows:
-            if score > max_tries:
-                points = 0
-            elif rank == 1:
-                points = 3; rank += 1
-            elif rank == 2:
-                points = 2; rank += 1
-            elif rank == 3:
-                points = 1; rank += 1
-            else:
-                points = 0
+            points = max_tries - score + 1
             scores[player] = scores.get(player, 0) + points
 
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    board = [f"📅 Monthly Leaderboard ({month})"]
+    board = [f"🏆 Monthly Leaderboard ({month})"]
     for i, (player, pts) in enumerate(sorted_scores, start=1):
         board.append(f"{i}. {player} — {pts} pts")
 
