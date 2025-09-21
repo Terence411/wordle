@@ -5,7 +5,9 @@ const { spawn } = require('child_process');
 // const client = new Client();
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: "wordle-bot" }),
-    puppeteer: { headless: true } // ensures Chromium runs headless
+    puppeteer: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    }
 });
 
 const GROUP_NAME = "Wordle Group";
