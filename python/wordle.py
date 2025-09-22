@@ -69,6 +69,23 @@ def parse_wordle(player, message):
     print(f"Parsed: {puzzle}, {player}, {score_val}, {max_tries}, {puzzle_date_reformatted}, {month_key}")
     return (puzzle, player, score_val, max_tries, puzzle_date_reformatted, month_key)
 
+def duplicate_check(parsed):
+    puzzle, player, score_val, max_tries, date, month = parsed
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM results WHERE puzzle=? AND player=?", (puzzle, player))
+    count = c.fetchone()[0]
+
+    if count > 0:
+        c.execute("SELECT score FROM results WHERE puzzle=? AND player=?", (puzzle, player))
+        existing_score = c.fetchone()[0]
+        fail_message = f" (or at least tried to). " if existing_score > max_tries else ". "
+
+        message = f"{player}! You've solved Wordle {puzzle} already" + fail_message + \
+                  f"The score you got was {existing_score if existing_score <= max_tries else 'X'}/{max_tries}."
+        return True, message
+    
+    return False, ""
+
 # --- Save & generate leaderboard ---
 def save_and_report(parsed):
     puzzle, player, score_val, max_tries, date, month = parsed
@@ -93,7 +110,6 @@ def leaderboard(puzzle_number):
 
     board = [f"🎯 Wordle {puzzle_number} Leaderboard"]
     index = 1
-
 
     for player, score, max_tries in rows:
         if score > max_tries:
@@ -141,10 +157,13 @@ if __name__ == "__main__":
         parsed = parse_wordle(sender, message)
         print(f"Parsed message: {parsed}")
         if parsed:
-            output = save_and_report(parsed)
+            duplicate_wordle, output = duplicate_check(parsed)
+            if not duplicate_wordle:
+                output = save_and_report(parsed)
+
             # Print leaderboard last, so Node.js can capture it
-            print("\n---Leaderboard Start---")
+            print("\n---Message Start---")
             print(output)
-            print("---Leaderboard End---")
+            print("---Message End---")
     else:
         print("Usage: python wordle.py <sender> <message>")
