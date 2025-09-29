@@ -36,7 +36,7 @@ client.on('message', async message => {
         const encodedMsg = Buffer.from(message.body).toString('base64');
 
         // Spawn Python script
-        const python = spawn('python3', ['python/wordle.py', sender, encodedMsg]);
+        const python = spawn('python3', ['python/wordle_firebase.py', sender, encodedMsg]);
 
         let output = "";
         python.stdout.on('data', data => output += data.toString());
