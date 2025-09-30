@@ -5,6 +5,8 @@ import sys
 import base64
 import requests
 import logging
+import firebase_admin
+from firebase_admin import credentials, firestore
 
 logging.basicConfig(level=logging.INFO, 
                     format="%(asctime)s %(message)s", 
@@ -16,23 +18,13 @@ VALID_MONTHS = [
 ]
 
 def init_db():
-    DB_FILE = "wordle.db"
-    conn = sqlite3.connect(DB_FILE, check_same_thread=False, timeout=10)
-    with conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS results (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                puzzle INTEGER,
-                player TEXT,
-                score INTEGER,
-                max_tries INTEGER,
-                date TEXT,
-                month TEXT,
-                year TEXT
-            )
-        """)
-    logging.info("Database initialized.")
-    return conn
+    # Initialize Firebase once
+    cred = credentials.Certificate("firebase-key.json")
+    firebase_admin.initialize_app(cred)
+
+    db = firestore.client()
+    logging.info("Connected to Firebase Firestore.")
+    return db
 
 def get_wordle_by_id(puzzle, start_date=None):
     # If no date is given, start from today
@@ -104,30 +96,46 @@ def parse_wordle(player, message):
 
     return None, None
 
-def duplicate_check(conn, parsed):
+def duplicate_check(db, parsed):
     puzzle, player, score_val, max_tries, date, month, year = parsed
 
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM results WHERE puzzle=? AND player=?", (puzzle, player))
-    count = c.fetchone()[0]
+    # Reference to collection "results"
+    results_ref = db.collection("results")
 
-    if count > 0:
-        c.execute("SELECT score FROM results WHERE puzzle=? AND player=?", (puzzle, player))
-        existing_score = c.fetchone()[0]
-        fail_message = f" (or at least tried to). " if existing_score > max_tries else ". "
+    # Query: find if same player already submitted for this puzzle
+    query = results_ref.where("puzzle", "==", puzzle).where("player", "==", player).stream()
+    docs = list(query)
 
-        message = f"{player}! You've solved Wordle {puzzle} already" + fail_message + \
-                  f"The score you got was {existing_score if existing_score <= max_tries else 'X'}/{max_tries}."
+    if docs:
+        # There is already an entry
+        existing_score = docs[0].to_dict().get("score", None)
+        fail_message = f" (or at least tried to). " if existing_score and existing_score > max_tries else ". "
+
+        message = (
+            f"{player}! You've solved Wordle {puzzle} already" + fail_message +
+            f"The score you got was {existing_score if existing_score and existing_score <= max_tries else 'X'}/{max_tries}."
+        )
+
         logging.info(f"Duplicate entry detected for player {player} on puzzle {puzzle}.")
         return True, message
-    
+
     return False, ""
 
 # --- Daily leaderboard ---
-def leaderboard(conn, puzzle_number):
-    c = conn.cursor()
-    c.execute("SELECT player, score, max_tries FROM results WHERE puzzle=? ORDER BY score ASC", (puzzle_number,))
-    rows = c.fetchall()
+def leaderboard(db, puzzle_number):
+    results = (
+        db.collection("results")
+        .where("puzzle", "==", puzzle_number)
+        .stream()
+    )
+    
+    rows = []
+    for doc in results:
+        data = doc.to_dict()
+        rows.append((data["player"], data["score"], data["max_tries"]))
+
+    # Sort same as before
+    rows.sort(key=lambda x: x[1])  
 
     board = [f"🎯 Wordle {puzzle_number} Leaderboard"]
     index = 1
@@ -144,24 +152,22 @@ def leaderboard(conn, puzzle_number):
     return "\n".join(board)
 
 # --- Monthly totals ---
-def monthly_totals(conn, month, year):
-    c = conn.cursor()
-    c.execute("SELECT DISTINCT puzzle FROM results WHERE month=? AND year=?", (month, year))
-    puzzles = [row[0] for row in c.fetchall()]
-
-    if not puzzles:
-        return None
+def monthly_totals(db, month, year):
+    results = (
+        db.collection("results")
+        .where("month", "==", month)
+        .where("year", "==", year)
+        .stream()
+    )
 
     scores = {}
-    for puzzle in puzzles:
-        c.execute("SELECT player, score, max_tries FROM results WHERE puzzle=? ORDER BY score ASC", (puzzle,))
-        rows = c.fetchall()
-        
-        for player, score, max_tries in rows:
-            points = max_tries - score + 1
-            scores[player] = scores.get(player, 0) + points
+    for doc in results:
+        data = doc.to_dict()
+        points = data["max_tries"] - data["score"] + 1
+        scores[data["player"]] = scores.get(data["player"], 0) + points
 
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
     board = [f"🏆 Monthly Leaderboard ({month} {year})"]
     for i, (player, pts) in enumerate(sorted_scores, start=1):
         board.append(f"{i}. {player} — {pts} pts")
@@ -170,24 +176,29 @@ def monthly_totals(conn, month, year):
     return "\n".join(board)
 
 # --- Save & generate leaderboard ---
-def save_and_report(conn, parsed):
+def save_and_report(db, parsed):
     puzzle, player, score_val, max_tries, date, month, year = parsed
 
-    with conn:
-        conn.execute("""
-        INSERT INTO results (puzzle, player, score, max_tries, date, month, year)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, parsed)
+    doc_ref = db.collection("results").document(f"{puzzle}_{player}")
+    doc_ref.set({
+        "puzzle": puzzle,
+        "player": player,
+        "score": score_val,
+        "max_tries": max_tries,
+        "date": date,
+        "month": month,
+        "year": year
+    })
 
     # Return leaderboard text for WhatsApp, but keep all debug prints
-    leaderboard_text = leaderboard(conn, puzzle)
-    monthly_text = monthly_totals(conn, month, year)
+    leaderboard_text = leaderboard(db, puzzle)
+    monthly_text = monthly_totals(db, month, year)
     
     return leaderboard_text + "\n\n" + monthly_text
 
 
 def main():
-    conn = init_db()
+    db = init_db()
 
     if len(sys.argv) != 3:
         print("Usage: python wordle.py <sender> <message>")
@@ -202,15 +213,15 @@ def main():
 
     match options_list:
         case "option_1":
-            duplicate_wordle, output = duplicate_check(conn, parsed)
+            duplicate_wordle, output = duplicate_check(db, parsed)
             if not duplicate_wordle:
-                output = save_and_report(conn, parsed)
+                output = save_and_report(db, parsed)
 
             print("\n---Message Start---\n", output, "\n---Message End---")
 
         case "option_2":
             month, year = parsed.split()
-            output = monthly_totals(conn, month, year)
+            output = monthly_totals(db, month, year)
 
             if not output:
                 output = f"No entries found for {month} {year}."

@@ -2,10 +2,6 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode'); // use this package for image QR codes
 const { spawn } = require('child_process');
 
-const express = require('express');
-const path = require('path');
-const app = express();
-
 // const client = new Client();
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: "wordle-bot" }),
@@ -24,13 +20,6 @@ client.on('qr', qr => {
     });
 });
 
-app.get('/qr', (req, res) => {
-    res.sendFile(path.join(__dirname, 'whatsapp-qr.png'));
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`QR server running on port ${PORT}`));
-
 client.on('ready', () => console.log('WhatsApp Bot Ready!'));
 
 client.on('message', async message => {
@@ -38,7 +27,7 @@ client.on('message', async message => {
 
     // Only process messages from the target group
     if (chat.name !== GROUP_NAME) return;
-
+    
     if (message.body.startsWith("Wordle")) {
         const sender = message._data.notifyName || message._data.senderName;
         console.log(`Detected Wordle from ${sender}`);
@@ -47,7 +36,7 @@ client.on('message', async message => {
         const encodedMsg = Buffer.from(message.body).toString('base64');
 
         // Spawn Python script
-        const python = spawn('python3', ['python/wordle.py', sender, encodedMsg]);
+        const python = spawn('python3', ['python/wordle_firebase.py', sender, encodedMsg]);
 
         let output = "";
         python.stdout.on('data', data => output += data.toString());
@@ -55,11 +44,11 @@ client.on('message', async message => {
 
         python.on('close', () => {
             // Extract leaderboard between our markers
-            const match = output.match(/---Leaderboard Start---\n([\s\S]*?)\n---Leaderboard End---/);
+            const match = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
             if (match) {
-                const leaderboardText = match[1];
-                // Send leaderboard back to the group in a code block
-                chat.sendMessage("```\n" + leaderboardText + "\n```");
+                const messageContent = match[1];
+                // Send message back to the group in a code block
+                chat.sendMessage("```" + messageContent + "```");
             } else {
                 console.log("Leaderboard markers not found in Python output.");
             }
