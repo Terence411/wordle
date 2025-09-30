@@ -1,0 +1,11 @@
+Procfile
+README.md
+node_modules/
+package-lock.json
+whatsapp-qr.png 
+wordle.db
+python/venv/
+python/wordle.db
+.wwebjs_auth/
+.wweb_cache/
+.git/
