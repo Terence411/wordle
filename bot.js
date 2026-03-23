@@ -1,6 +1,7 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode'); // use this package for image QR codes
 const { spawn } = require('child_process');
+const fs = require('fs');
 
 // const client = new Client();
 const client = new Client({
@@ -12,15 +13,27 @@ const client = new Client({
 
 const GROUP_NAME = "Wordle Group";
 
+let qrGenerated = false;
+
 client.on('qr', qr => {
-    // Generate QR code image and save it
+    // if qr is already qrGenerated, then return
+    if (qrGenerated) return;
+
     QRCode.toFile('whatsapp-qr.png', qr, { width: 300 }, err => {
         if (err) console.error('Failed to save QR code image:', err);
-        else console.log('QR code saved to whatsapp-qr.png. Scan it with WhatsApp!');
+        else {
+            console.log('QR code saved to whatsapp-qr.png. Scan it with WhatsApp!');
+            qrGenerated = true;
+        }
     });
 });
 
-client.on('ready', () => console.log('WhatsApp Bot Ready!'));
+client.on('ready', () => {
+    console.log('WhatsApp Bot Ready!');
+    fs.unlink('whatsapp-qr.png', err => {
+        if (err && err.code !== 'ENOENT') console.error('Failed to delete QR code:', err);
+    });
+});
 
 client.on('message', async message => {
     const chat = await message.getChat();
@@ -36,7 +49,7 @@ client.on('message', async message => {
         const encodedMsg = Buffer.from(message.body).toString('base64');
 
         // Spawn Python script
-        const python = spawn('python3', ['python/wordle_firebase.py', sender, encodedMsg]);
+        const python = spawn('python3', ['wordle_firebase.py', sender, encodedMsg]);
 
         let output = "";
         python.stdout.on('data', data => output += data.toString());
