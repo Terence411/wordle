@@ -1,30 +1,117 @@
-# Wordle WhatsApp Bot
+# Wordle Tracker Bot
 
-This bot tracks **Wordle** scores posted in a WhatsApp group and generates **daily and monthly leaderboards**.
+A WhatsApp bot that automatically tracks Wordle scores from a group chat and posts daily and monthly leaderboards.
 
-It runs on **Node.js** for WhatsApp integration and **Python** for parsing and storing scores in SQLite.
+## How It Works
 
----
+When a member of the WhatsApp group shares their Wordle result, the bot detects it, records the score in Firebase, and immediately replies with an updated leaderboard. Members can also request the monthly leaderboard at any time.
 
-## ✨ Features
-- ✅ Detects Wordle messages in a WhatsApp group  
-- ✅ Stores results in a local **SQLite database**  
-- ✅ Generates **daily leaderboards** per puzzle  
-- ✅ Generates **monthly leaderboards** with points system (3–2–1)  
-- ✅ Posts results directly back into the WhatsApp group  
+## Prerequisites
 
----
+- Node.js v16+
+- Python 3.10+
+- A Firebase project with Firestore enabled
+- A WhatsApp account to run the bot from
 
-## ⚙️ Requirements
-- [Node.js](https://nodejs.org/) (>= 16)  
-- [Python](https://www.python.org/downloads/) (>= 3.8)  
-- SQLite (already included with Python)  
+## Setup
 
----
+### 1. Clone and install Node dependencies
 
-## 📦 Setup & Installation
+```bash
+npm install
+```
 
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/wordle-whatsapp-bot.git
-   cd wordle-whatsapp-bot
+### 2. Set up Python environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate       # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Configure Firebase
+
+1. Go to the [Firebase Console](https://console.firebase.google.com/)
+2. Open your project → Project Settings → Service Accounts
+3. Click **Generate new private key** and download the JSON file
+4. Rename it to `firebase-key.json` and place it in the project root
+5. Ensure Firestore is enabled in your Firebase project (Firestore Database → Create database)
+
+### 4. Set the WhatsApp group name
+
+In `bot.js`, set `GROUP_NAME` to match the exact name of your WhatsApp group:
+
+```js
+const GROUP_NAME = "Wordle Group";
+```
+
+## Running the Bot
+
+```bash
+npm start
+```
+
+On first run, a `whatsapp-qr.png` file is generated in the project root. Scan it with WhatsApp:
+
+**WhatsApp → Settings → Linked Devices → Link a Device**
+
+Once scanned, the terminal will print `WhatsApp Bot Ready!` and the QR image is automatically deleted. Your session is saved in `.wwebjs_auth/`, so subsequent runs will connect without a QR scan.
+
+## Usage
+
+### Submitting a Wordle score
+
+Simply share your Wordle result in the group as normal. WhatsApp copies results in the format:
+
+```
+Wordle 1,738 4/6
+
+⬛⬛🟨🟨⬛
+⬛🟨⬛⬛🟨
+🟩⬛🟨🟩⬛
+🟩🟩🟩🟩🟩
+```
+
+The bot will reply with the daily leaderboard and your current monthly standing:
+
+```
+🎯 Wordle 1738 Leaderboard
+1. Alice — 3/6
+2. Bob — 4/6
+3. Carol — X/6
+
+ 🏆 Monthly Leaderboard (March 2026)
+1. Alice — 42 pts
+2. Bob — 38 pts
+3. Carol — 21 pts
+```
+
+### Requesting the monthly leaderboard
+
+Send this message in the group:
+
+```
+Wordle Leaderboard March 2026
+```
+
+The bot will reply with the full monthly standings for that month.
+
+## Scoring
+
+Monthly points are calculated as `max_tries - score + 1` per puzzle. A score of 1/6 earns the most points (6), and a failed attempt (X/6) earns 0. Points accumulate across all puzzles played in the month.
+
+| Score | Points (out of 6) |
+|-------|-------------------|
+| 1/6   | 6 pts             |
+| 2/6   | 5 pts             |
+| 3/6   | 4 pts             |
+| 4/6   | 3 pts             |
+| 5/6   | 2 pts             |
+| 6/6   | 1 pt              |
+| X/6   | 0 pts             |
+
+## Notes
+
+- Each player can only submit one score per puzzle — duplicates are rejected with a reminder of the original score
+- The bot only listens to the group specified in `GROUP_NAME` and ignores all other chats
+- `firebase-key.json` contains sensitive credentials — do not commit it to version control
