@@ -51,7 +51,7 @@ class WordleParser:
     @staticmethod
     def parse(player, message):
         # Case #1: "Wordle <puzzle> <score>/<max_tries>"
-        match = re.match(r"Wordle ([\d,]+) ([X\d])/(\d+)", message)
+        match = re.match(r"Wordle ([\d,]+) ([X\d])/(\d+)\s*(?:\n|$)", message)
         logging.info(f"Case #1 match: {match}")
 
         if match:

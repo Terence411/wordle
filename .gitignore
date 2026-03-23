@@ -5,3 +5,4 @@ wordle.db
 whatsapp-qr.png
 firebase-key.json
 venv/
+__pycache__/
