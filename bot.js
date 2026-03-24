@@ -49,8 +49,8 @@ client.on('message', async message => {
         // Encode multi-line message to base64
         const encodedMsg = Buffer.from(message.body).toString('base64');
 
-        // Spawn Python script
-        const python = spawn('python3', ['wordle_firebase.py', sender, encodedMsg]);
+        // Spawn Python script using venv interpreter
+        const python = spawn('./venv/bin/python3', ['wordle_firebase.py', sender, encodedMsg]);
 
         let output = "";
         python.stdout.on('data', data => output += data.toString());
@@ -88,7 +88,7 @@ schedule.scheduleJob('59 23 * * 0', async () => {
     }
 
     const encodedMsg = Buffer.from('Wordle Leaderboard This Week').toString('base64');
-    const python = spawn('python3', ['wordle_firebase.py', 'Bot', encodedMsg]);
+    const python = spawn('./venv/bin/python3', ['wordle_firebase.py', 'Bot', encodedMsg]);
 
     let output = "";
     python.stdout.on('data', data => output += data.toString());
