@@ -12,10 +12,7 @@ When a member of the WhatsApp group shares their Wordle result, the bot detects 
 - Python 3.10+
 - A Firebase project with Firestore enabled
 - A WhatsApp account to run the bot from
-<<<<<<< HEAD
 - pm2 (for background execution): `sudo npm install -g pm2`
-=======
->>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 
 ## Setup
 
@@ -51,16 +48,12 @@ const GROUP_NAME = "Wordle Group";
 
 ## Running the Bot
 
-<<<<<<< HEAD
 ### Option 1 — Foreground (terminal stays busy)
 
-=======
->>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 ```bash
 npm start
 ```
 
-<<<<<<< HEAD
 ### Option 2 — Background with pm2 (recommended)
 
 pm2 is a process manager that runs the bot in the background, restarts it automatically if it crashes, and keeps logs accessible at any time. Install it once globally:
@@ -89,8 +82,6 @@ pm2 save        # saves the current process list
 
 > pm2 is a system tool installed globally — it does not appear in `package.json` and will not show in `git status`.
 
-=======
->>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 On first run, a `whatsapp-qr.png` file is generated in the project root. Scan it with WhatsApp:
 
 **WhatsApp → Settings → Linked Devices → Link a Device**
