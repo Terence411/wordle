@@ -2,6 +2,7 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode'); // use this package for image QR codes
 const { spawn } = require('child_process');
 const fs = require('fs');
+const schedule = require('node-schedule');
 
 // const client = new Client();
 const client = new Client({
@@ -67,6 +68,40 @@ client.on('message', async message => {
             }
         });
     }
+});
+
+// Every Sunday at 23:59 — send the weekly leaderboard automatically
+schedule.scheduleJob('59 23 * * 0', async () => {
+    console.log('Running scheduled weekly leaderboard...');
+
+    if (!client.info) {
+        console.error('Scheduled job: client not ready.');
+        return;
+    }
+
+    const chats = await client.getChats();
+    const group = chats.find(c => c.name === GROUP_NAME);
+
+    if (!group) {
+        console.error(`Scheduled job: "${GROUP_NAME}" not found.`);
+        return;
+    }
+
+    const encodedMsg = Buffer.from('Wordle Leaderboard This Week').toString('base64');
+    const python = spawn('python3', ['wordle_firebase.py', 'Bot', encodedMsg]);
+
+    let output = "";
+    python.stdout.on('data', data => output += data.toString());
+    python.stderr.on('data', data => console.error(data.toString()));
+
+    python.on('close', () => {
+        const match = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
+        if (match) {
+            group.sendMessage("```" + match[1] + "```");
+        } else {
+            console.log("Scheduled job: no output from Python.");
+        }
+    });
 });
 
 client.initialize();
