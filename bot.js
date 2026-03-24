@@ -2,10 +2,7 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode'); // use this package for image QR codes
 const { spawn } = require('child_process');
 const fs = require('fs');
-<<<<<<< HEAD
 const schedule = require('node-schedule');
-=======
->>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 
 // const client = new Client();
 const client = new Client({
