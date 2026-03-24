@@ -2,7 +2,10 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const QRCode = require('qrcode'); // use this package for image QR codes
 const { spawn } = require('child_process');
 const fs = require('fs');
+<<<<<<< HEAD
 const schedule = require('node-schedule');
+=======
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 
 // const client = new Client();
 const client = new Client({
@@ -49,8 +52,13 @@ client.on('message', async message => {
         // Encode multi-line message to base64
         const encodedMsg = Buffer.from(message.body).toString('base64');
 
+<<<<<<< HEAD
+        // Spawn Python script using venv interpreter
+        const python = spawn('./venv/bin/python3', ['wordle_firebase.py', sender, encodedMsg]);
+=======
         // Spawn Python script
         const python = spawn('python3', ['wordle_firebase.py', sender, encodedMsg]);
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 
         let output = "";
         python.stdout.on('data', data => output += data.toString());
@@ -88,7 +96,7 @@ schedule.scheduleJob('59 23 * * 0', async () => {
     }
 
     const encodedMsg = Buffer.from('Wordle Leaderboard This Week').toString('base64');
-    const python = spawn('python3', ['wordle_firebase.py', 'Bot', encodedMsg]);
+    const python = spawn('./venv/bin/python3', ['wordle_firebase.py', 'Bot', encodedMsg]);
 
     let output = "";
     python.stdout.on('data', data => output += data.toString());
