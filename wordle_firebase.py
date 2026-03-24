@@ -51,7 +51,11 @@ class WordleParser:
     @staticmethod
     def parse(player, message):
         # Case #1: "Wordle <puzzle> <score>/<max_tries>"
+<<<<<<< HEAD
         match = re.match(r"Wordle ([\d,]+) ([X\d])/(\d+)\s*(?:\n|$)", message)
+=======
+        match = re.match(r"Wordle ([\d,]+) ([X\d])/(\d+)", message)
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
         logging.info(f"Case #1 match: {match}")
 
         if match:
@@ -69,6 +73,7 @@ class WordleParser:
             print(f"Parsed: {puzzle}, {player}, {score_val}, {max_tries}, {puzzle_date_reformatted}, {month}, {year}")
             return (puzzle, player, score_val, max_tries, puzzle_date_reformatted, month, year), "option_1"
 
+<<<<<<< HEAD
         # Case #3: "Wordle Stats <name> <month> <year>"
         match = re.match(r"Wordle Stats (.+?)\s+(\w+)\s+(\d{4})\s*$", message, re.IGNORECASE)
         logging.info(f"Case #3 match: {match}")
@@ -93,6 +98,8 @@ class WordleParser:
             logging.info("Parsed weekly leaderboard request")
             return None, "option_4"
 
+=======
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
         # Case #2: "Wordle Leaderboard <Month> <Year>"
         match = re.match(r"Wordle Leaderboard (\w+) (\d{4})", message, re.IGNORECASE)
         logging.info(f"Case #2 match: {match}")
@@ -109,6 +116,7 @@ class WordleParser:
             logging.info(f"Parsed leaderboard request for {month_year_key}")
             return month_year_key, "option_2"
 
+<<<<<<< HEAD
         # Case #5: "Wordle vs <player1> vs <player2> [vs ...] <month> <year> [common]"
         match = re.match(r"Wordle vs (.+?)\s+(\w+)\s+(\d{4})(\s+common)?\s*$", message, re.IGNORECASE)
         logging.info(f"Case #5 match: {match}")
@@ -130,6 +138,8 @@ class WordleParser:
             logging.info(f"Parsed head-to-head: {players}, {month_name} {year_str}, common={common_mode}")
             return (players, month_name, year_str, common_mode), "option_5"
 
+=======
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
         return None, None
 
 
@@ -213,6 +223,7 @@ class WordleTracker:
     def save_and_report(self, parsed):
         puzzle, player, score_val, max_tries, date, month, year = parsed
 
+<<<<<<< HEAD
         # Check if this is the first submission for this puzzle
         existing = list(
             self.db.collection("wordle_data")
@@ -221,6 +232,8 @@ class WordleTracker:
         )
         is_first = len(existing) == 0
 
+=======
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
         doc_ref = self.db.collection("wordle_data").document(f"{puzzle}_{player}")
         doc_ref.set({
             "puzzle": puzzle,
@@ -235,6 +248,7 @@ class WordleTracker:
         leaderboard_text = self.leaderboard(puzzle)
         monthly_text = self.monthly_totals(month, year)
 
+<<<<<<< HEAD
         banner = ""
         if is_first:
             score_display = "X" if score_val > max_tries else str(score_val)
@@ -380,6 +394,9 @@ class WordleTracker:
 
         logging.info(f"Generated head-to-head for {players} in {month} {year}")
         return "\n".join(lines)
+=======
+        return leaderboard_text + "\n\n" + monthly_text
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 
 
 def main():
@@ -412,6 +429,7 @@ def main():
 
             print("\n---Message Start---\n", output, "\n---Message End---")
 
+<<<<<<< HEAD
         case "option_3":
             player_name, month, year = parsed
             output = tracker.player_stats(player_name, month, year)
@@ -429,6 +447,8 @@ def main():
 
             print("\n---Message Start---\n", output, "\n---Message End---")
 
+=======
+>>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
         case _:
             logging.info("No valid Wordle data found in the message.")
 
