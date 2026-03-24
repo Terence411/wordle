@@ -52,13 +52,8 @@ client.on('message', async message => {
         // Encode multi-line message to base64
         const encodedMsg = Buffer.from(message.body).toString('base64');
 
-<<<<<<< HEAD
         // Spawn Python script using venv interpreter
         const python = spawn('./venv/bin/python3', ['wordle_firebase.py', sender, encodedMsg]);
-=======
-        // Spawn Python script
-        const python = spawn('python3', ['wordle_firebase.py', sender, encodedMsg]);
->>>>>>> 7340cad9f0d35009966ce3870363bc2ac01ca41e
 
         let output = "";
         python.stdout.on('data', data => output += data.toString());
