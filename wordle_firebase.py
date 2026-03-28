@@ -69,9 +69,9 @@ class WordleParser:
             print(f"Parsed: {puzzle}, {player}, {score_val}, {max_tries}, {puzzle_date_reformatted}, {month}, {year}")
             return (puzzle, player, score_val, max_tries, puzzle_date_reformatted, month, year), "option_1"
 
-        # Case #3: "Wordle Stats <name> <month> <year>"
+        # Case #2: "Wordle Stats <name> <month> <year>"
         match = re.match(r"Wordle Stats (.+?)\s+(\w+)\s+(\d{4})\s*$", message, re.IGNORECASE)
-        logging.info(f"Case #3 match: {match}")
+        logging.info(f"Case #2 match: {match}")
 
         if match:
             player_name = match.group(1).strip()
@@ -83,19 +83,19 @@ class WordleParser:
                 return None, None
 
             logging.info(f"Parsed stats request for {player_name} in {month_name} {year_str}")
-            return (player_name, month_name, year_str), "option_3"
+            return (player_name, month_name, year_str), "option_2"
 
-        # Case #4: "Wordle Leaderboard Current" — must be before Case #2
+        # Case #3: "Wordle Leaderboard Current" — must be before Case #4
         match = re.match(r"Wordle Leaderboard Current\s*$", message, re.IGNORECASE)
-        logging.info(f"Case #4 match: {match}")
+        logging.info(f"Case #3 match: {match}")
 
         if match:
             logging.info("Parsed current month leaderboard request")
-            return None, "option_4"
+            return None, "option_3"
 
-        # Case #2: "Wordle Leaderboard <Month> <Year>"
+        # Case #4: "Wordle Leaderboard <Month> <Year>"
         match = re.match(r"Wordle Leaderboard (\w+) (\d{4})", message, re.IGNORECASE)
-        logging.info(f"Case #2 match: {match}")
+        logging.info(f"Case #4 match: {match}")
 
         if match:
             month_name = match.group(1).capitalize()
@@ -107,7 +107,7 @@ class WordleParser:
 
             month_year_key = f"{month_name} {current_year}"
             logging.info(f"Parsed leaderboard request for {month_year_key}")
-            return month_year_key, "option_2"
+            return month_year_key, "option_4"
 
         # Case #5: "Wordle <player1> vs <player2> [vs ...] <month> <year> [common]"
         match = re.match(r"Wordle (.+\s+vs\s+.+?)\s+(\w+)\s+(\d{4})(\s+common)?\s*$", message, re.IGNORECASE)
@@ -364,22 +364,22 @@ def main():
                 print("\n---Message Start---\n", output, "\n---Message End---")
 
         case "option_2":
-            month, year = parsed.split()
-            output = tracker.monthly_totals(month, year)
-
-            if not output:
-                output = f"No entries found for {month} {year}."
-
-            print("\n---Message Start---\n", output, "\n---Message End---")
-
-        case "option_3":
             player_name, month, year = parsed
             output = tracker.player_stats(player_name, month, year)
 
             print("\n---Message Start---\n", output, "\n---Message End---")
 
-        case "option_4":
+        case "option_3":
             output = tracker.current_leaderboard()
+
+            print("\n---Message Start---\n", output, "\n---Message End---")
+
+        case "option_4":
+            month, year = parsed.split()
+            output = tracker.monthly_totals(month, year)
+
+            if not output:
+                output = f"No entries found for {month} {year}."
 
             print("\n---Message Start---\n", output, "\n---Message End---")
 

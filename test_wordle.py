@@ -98,7 +98,7 @@ class TestWordleParser(unittest.TestCase):
         message = "Wordle Leaderboard March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Terence", message)
-        self.assertEqual(option, "option_2")
+        self.assertEqual(option, "option_4")
         self.assertEqual(parsed, "March 2026")
 
     # Leaderboard request with lowercase — should still be accepted
@@ -108,7 +108,7 @@ class TestWordleParser(unittest.TestCase):
         message = "wordle leaderboard march 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Terence", message)
-        self.assertEqual(option, "option_2")
+        self.assertEqual(option, "option_4")
         self.assertEqual(parsed, "March 2026")
 
     # 5. Altered message — player added text after the score
@@ -257,12 +257,12 @@ class TestWordleParserNewCommands(unittest.TestCase):
 
     # Stats command — single-word name
     # Message: "Wordle Stats Alice March 2026"
-    # Expected: option_3, player="Alice", month="March", year="2026"
+    # Expected: option_2, player="Alice", month="March", year="2026"
     def test_stats_single_name(self):
         message = "Wordle Stats Alice March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
-        self.assertEqual(option, "option_3")
+        self.assertEqual(option, "option_2")
         player, month, year = parsed
         self.assertEqual(player, "Alice")
         self.assertEqual(month, "March")
@@ -270,12 +270,12 @@ class TestWordleParserNewCommands(unittest.TestCase):
 
     # Stats command — name with spaces
     # Message: "Wordle Stats John Doe March 2026"
-    # Expected: option_3, player="John Doe"
+    # Expected: option_2, player="John Doe"
     def test_stats_name_with_spaces(self):
         message = "Wordle Stats John Doe March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
-        self.assertEqual(option, "option_3")
+        self.assertEqual(option, "option_2")
         player, month, year = parsed
         self.assertEqual(player, "John Doe")
         self.assertEqual(month, "March")
@@ -292,22 +292,22 @@ class TestWordleParserNewCommands(unittest.TestCase):
 
     # Current month leaderboard — exact match
     # Message: "Wordle Leaderboard Current"
-    # Expected: option_4
+    # Expected: option_3
     def test_current_leaderboard_command(self):
         message = "Wordle Leaderboard Current"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
-        self.assertEqual(option, "option_4")
+        self.assertEqual(option, "option_3")
         self.assertIsNone(parsed)
 
     # Current month leaderboard — case insensitive
     # Message: "wordle leaderboard current"
-    # Expected: option_4
+    # Expected: option_3
     def test_current_leaderboard_case_insensitive(self):
         message = "wordle leaderboard current"
         print(f"\n[Test message] {repr(message)}")
         _, option = WordleParser.parse("Bot", message)
-        self.assertEqual(option, "option_4")
+        self.assertEqual(option, "option_3")
 
     # Head-to-head — two single-word names
     # Message: "Wordle Alice vs Bob March 2026"
