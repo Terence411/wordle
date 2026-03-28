@@ -39,18 +39,6 @@ The import `from google.cloud.firestore_v1.base_query import FieldFilter` was al
 
 ---
 
-### Issue 5 — Bot crashes repeatedly on EC2 due to unhandled promise rejections
-
-**Query:** After deploying to EC2, the bot was randomly stopping after responding to one or a few messages. pm2 showed a restart count of 49+. The bot would work briefly after a manual restart, then stop responding again.
-
-**Resolution:** The `message` event handler in `bot.js` was `async` but had no `try/catch`. If `message.getChat()` threw an error (common during WhatsApp reconnections or brief session instability), the rejected promise was unhandled, which crashes the Node.js process. pm2 auto-restarted it, which is why it appeared to "work once then stop". Two fixes applied:
-
-1. Wrapped the entire message handler body in `try/catch` so any error is logged rather than crashing the process.
-2. Added `process.on('unhandledRejection', ...)` at the bottom of `bot.js` as a global safety net for any other async errors that slip through.
-3. Added `.catch()` to `chat.sendMessage()` so a failed send also logs instead of throwing.
-
----
-
 ### Issue 4 — QR code image not deleted after authentication
 **Query:** After the WhatsApp QR code is scanned and the bot connects, the `whatsapp-qr.png` file remains on disk. It should be cleaned up automatically.
 
@@ -65,5 +53,17 @@ client.on('ready', () => {
     });
 });
 ```
+
+---
+
+### Issue 5 — Bot crashes repeatedly on EC2 due to unhandled promise rejections
+
+**Query:** After deploying to EC2, the bot was randomly stopping after responding to one or a few messages. pm2 showed a restart count of 49+. The bot would work briefly after a manual restart, then stop responding again.
+
+**Resolution:** The `message` event handler in `bot.js` was `async` but had no `try/catch`. If `message.getChat()` threw an error (common during WhatsApp reconnections or brief session instability), the rejected promise was unhandled, which crashes the Node.js process. pm2 auto-restarted it, which is why it appeared to "work once then stop". Two fixes applied:
+
+1. Wrapped the entire message handler body in `try/catch` so any error is logged rather than crashing the process.
+2. Added `process.on('unhandledRejection', ...)` at the bottom of `bot.js` as a global safety net for any other async errors that slip through.
+3. Added `.catch()` to `chat.sendMessage()` so a failed send also logs instead of throwing.
 
 ---
