@@ -37,36 +37,42 @@ client.on('ready', () => {
 });
 
 client.on('message', async message => {
-    const chat = await message.getChat();
+    try {
+        const chat = await message.getChat();
 
-    // Only process messages from the target group
-    if (chat.name !== GROUP_NAME) return;
-    
-    if (message.body.startsWith("Wordle")) {
-        const sender = message._data.notifyName || message._data.senderName;
-        console.log(`Detected Wordle from ${sender}`);
+        // Only process messages from the target group
+        if (chat.name !== GROUP_NAME) return;
 
-        // Encode multi-line message to base64
-        const encodedMsg = Buffer.from(message.body).toString('base64');
+        if (message.body.startsWith("Wordle")) {
+            const sender = message._data.notifyName || message._data.senderName;
+            console.log(`Detected Wordle from ${sender}`);
 
-        // Spawn Python script using venv interpreter
-        const python = spawn('./venv/bin/python3', ['wordle_firebase.py', sender, encodedMsg]);
+            // Encode multi-line message to base64
+            const encodedMsg = Buffer.from(message.body).toString('base64');
 
-        let output = "";
-        python.stdout.on('data', data => output += data.toString());
-        python.stderr.on('data', data => console.error(data.toString()));
+            // Spawn Python script using venv interpreter
+            const python = spawn('./venv/bin/python3', ['wordle_firebase.py', sender, encodedMsg]);
 
-        python.on('close', () => {
-            // Extract leaderboard between our markers
-            const match = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
-            if (match) {
-                const messageContent = match[1];
-                // Send message back to the group in a code block
-                chat.sendMessage("```" + messageContent + "```");
-            } else {
-                console.log("Leaderboard markers not found in Python output.");
-            }
-        });
+            let output = "";
+            python.stdout.on('data', data => output += data.toString());
+            python.stderr.on('data', data => console.error(data.toString()));
+
+            python.on('close', () => {
+                // Extract leaderboard between our markers
+                const match = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
+                if (match) {
+                    const messageContent = match[1];
+                    // Send message back to the group in a code block
+                    chat.sendMessage("```" + messageContent + "```").catch(err =>
+                        console.error('Failed to send message:', err)
+                    );
+                } else {
+                    console.log("Leaderboard markers not found in Python output.");
+                }
+            });
+        }
+    } catch (err) {
+        console.error('Error handling message:', err);
     }
 });
 
@@ -102,6 +108,11 @@ schedule.scheduleJob('59 23 * * 0', async () => {
             console.log("Scheduled job: no output from Python.");
         }
     });
+});
+
+// Prevent unhandled rejections from crashing the process
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled rejection at:', promise, 'reason:', reason);
 });
 
 client.initialize();
