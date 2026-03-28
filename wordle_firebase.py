@@ -109,8 +109,8 @@ class WordleParser:
             logging.info(f"Parsed leaderboard request for {month_year_key}")
             return month_year_key, "option_2"
 
-        # Case #5: "Wordle vs <player1> vs <player2> [vs ...] <month> <year> [common]"
-        match = re.match(r"Wordle vs (.+?)\s+(\w+)\s+(\d{4})(\s+common)?\s*$", message, re.IGNORECASE)
+        # Case #5: "Wordle <player1> vs <player2> [vs ...] <month> <year> [common]"
+        match = re.match(r"Wordle (.+\s+vs\s+.+?)\s+(\w+)\s+(\d{4})(\s+common)?\s*$", message, re.IGNORECASE)
         logging.info(f"Case #5 match: {match}")
 
         if match:
@@ -163,30 +163,6 @@ class WordleTracker:
 
         return False, ""
 
-    def leaderboard(self, puzzle_number):
-        results = (
-            self.db.collection("wordle_data")
-            .where(filter=FieldFilter("puzzle", "==", puzzle_number))
-            .stream()
-        )
-
-        rows = []
-        for doc in results:
-            data = doc.to_dict()
-            rows.append((data["player"], data["score"], data["max_tries"]))
-
-        rows.sort(key=lambda x: x[1])
-
-        board = [f"🎯 Wordle {puzzle_number} Leaderboard"]
-        for index, (player, score, max_tries) in enumerate(rows, start=1):
-            if score > max_tries:
-                board.append(f"{index}. {player} — X/{max_tries}")
-            else:
-                board.append(f"{index}. {player} — {score}/{max_tries}")
-
-        logging.info(f"Generated leaderboard for Wordle {puzzle_number}")
-        return "\n".join(board)
-
     def monthly_totals(self, month, year):
         results = (
             self.db.collection("wordle_data")
@@ -210,16 +186,8 @@ class WordleTracker:
         logging.info(f"Generated monthly totals for {month} {year}")
         return "\n".join(board)
 
-    def save_and_report(self, parsed):
+    def save(self, parsed):
         puzzle, player, score_val, max_tries, date, month, year = parsed
-
-        # Check if this is the first submission for this puzzle
-        existing = list(
-            self.db.collection("wordle_data")
-            .where(filter=FieldFilter("puzzle", "==", puzzle))
-            .stream()
-        )
-        is_first = len(existing) == 0
 
         doc_ref = self.db.collection("wordle_data").document(f"{puzzle}_{player}")
         doc_ref.set({
@@ -231,16 +199,7 @@ class WordleTracker:
             "month": month,
             "year": year
         })
-
-        leaderboard_text = self.leaderboard(puzzle)
-        monthly_text = self.monthly_totals(month, year)
-
-        banner = ""
-        if is_first:
-            score_display = "X" if score_val > max_tries else str(score_val)
-            banner = f"🥇 {player} is the first to submit today — sets the bar at {score_display}/{max_tries}!\n\n"
-
-        return banner + leaderboard_text + "\n\n" + monthly_text
+        logging.info(f"Saved score for {player} on puzzle {puzzle}")
 
     def player_stats(self, player, month, year):
         results = list(
@@ -399,7 +358,7 @@ def main():
         case "option_1":
             duplicate_wordle, output = tracker.duplicate_check(parsed)
             if not duplicate_wordle:
-                tracker.save_and_report(parsed)
+                tracker.save(parsed)
                 print("\n---Reaction---\n✅\n---End Reaction---")
             else:
                 print("\n---Message Start---\n", output, "\n---Message End---")

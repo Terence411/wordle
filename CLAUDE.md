@@ -47,7 +47,7 @@ Requires `firebase-key.json` in the project root (Firebase service account crede
 | `Wordle Leaderboard <Month> <Year>` | Monthly leaderboard |
 | `Wordle Leaderboard Current` | Leaderboard from 1st of current month to today |
 | `Wordle Stats <name> <Month> <Year>` | Personal stats for a player (names with spaces supported) |
-| `Wordle vs <p1> vs <p2> <Month> <Year> [common]` | Head-to-head comparison; `common` restricts to shared puzzles only |
+| `Wordle <p1> vs <p2> <Month> <Year> [common]` | Head-to-head comparison; `common` restricts to shared puzzles only |
 
 **Python class structure:**
 - `WordleParser` — static methods only; parses messages and resolves puzzle numbers to dates via the NYT API

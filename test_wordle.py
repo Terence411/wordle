@@ -221,33 +221,6 @@ class TestWordleTracker(unittest.TestCase):
 
         self.assertIn("X/6", message)
 
-    # Daily leaderboard — players sorted by score ascending (lower = better)
-    # Data: Alice=5/6, Bob=2/6, Carol=3/6
-    # Expected: Bob, Carol, Alice
-    def test_leaderboard_sorted_by_score(self):
-        self._single_where_mock([
-            make_firestore_doc("Alice", 5, 6),
-            make_firestore_doc("Bob", 2, 6),
-            make_firestore_doc("Carol", 3, 6),
-        ])
-        print(f"\n[Test data] Alice=5/6, Bob=2/6, Carol=3/6 — expected order: Bob, Carol, Alice")
-        result = self.tracker.leaderboard(1738)
-        lines = result.split("\n")
-
-        self.assertIn("Bob", lines[1])
-        self.assertIn("Carol", lines[2])
-        self.assertIn("Alice", lines[3])
-
-    # Leaderboard entry where player failed — score displayed as X/6
-    # Data: Terence has score=7 (X) for puzzle 1738
-    # Expected: leaderboard shows "X/6" for Terence
-    def test_leaderboard_displays_x_for_failed_score(self):
-        self._single_where_mock([make_firestore_doc("Terence", 7, 6)])
-        print(f"\n[Test data] Player=Terence, Score=X/6 (stored as 7)")
-        result = self.tracker.leaderboard(1738)
-
-        self.assertIn("X/6", result)
-
     # Monthly totals — points accumulate across multiple puzzles
     # Data: Alice scores 2/6 and 3/6 = 9 pts, Bob scores 4/6 = 3 pts
     # Expected: Alice ranked first
@@ -337,10 +310,10 @@ class TestWordleParserNewCommands(unittest.TestCase):
         self.assertEqual(option, "option_4")
 
     # Head-to-head — two single-word names
-    # Message: "Wordle vs Alice vs Bob March 2026"
+    # Message: "Wordle Alice vs Bob March 2026"
     # Expected: option_5, players=["Alice","Bob"], common=False
     def test_h2h_two_players(self):
-        message = "Wordle vs Alice vs Bob March 2026"
+        message = "Wordle Alice vs Bob March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_5")
@@ -351,10 +324,10 @@ class TestWordleParserNewCommands(unittest.TestCase):
         self.assertFalse(common)
 
     # Head-to-head — names with spaces + common mode
-    # Message: "Wordle vs John Doe vs Alice Smith March 2026 common"
+    # Message: "Wordle John Doe vs Alice Smith March 2026 common"
     # Expected: option_5, players=["John Doe","Alice Smith"], common=True
     def test_h2h_names_with_spaces_and_common(self):
-        message = "Wordle vs John Doe vs Alice Smith March 2026 common"
+        message = "Wordle John Doe vs Alice Smith March 2026 common"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_5")
@@ -363,31 +336,31 @@ class TestWordleParserNewCommands(unittest.TestCase):
         self.assertTrue(common)
 
     # Head-to-head — three players
-    # Message: "Wordle vs Alice vs Bob vs Carol March 2026"
+    # Message: "Wordle Alice vs Bob vs Carol March 2026"
     # Expected: option_5, players=["Alice","Bob","Carol"]
     def test_h2h_three_players(self):
-        message = "Wordle vs Alice vs Bob vs Carol March 2026"
+        message = "Wordle Alice vs Bob vs Carol March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_5")
         players, _, _, _ = parsed
         self.assertEqual(players, ["Alice", "Bob", "Carol"])
 
-    # Head-to-head — single player should be rejected
-    # Message: "Wordle vs Alice March 2026"
-    # Expected: rejected, returns (None, None)
+    # Head-to-head — single player (no "vs") should be rejected
+    # Message: "Wordle Alice March 2026"
+    # Expected: rejected, returns (None, None) — no "vs" means regex doesn't match
     def test_h2h_single_player_rejected(self):
-        message = "Wordle vs Alice March 2026"
+        message = "Wordle Alice March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertIsNone(parsed)
         self.assertIsNone(option)
 
     # Head-to-head — invalid month
-    # Message: "Wordle vs Alice vs Bob Octember 2026"
+    # Message: "Wordle Alice vs Bob Octember 2026"
     # Expected: rejected, returns (None, None)
     def test_h2h_invalid_month(self):
-        message = "Wordle vs Alice vs Bob Octember 2026"
+        message = "Wordle Alice vs Bob Octember 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertIsNone(parsed)
@@ -430,19 +403,14 @@ class TestWordleTrackerNewFeatures(unittest.TestCase):
             .where.return_value \
             .stream.return_value = docs
 
-    # Feature 1: First submission — banner shown when no existing docs for puzzle
-    # Data: no existing entries for puzzle 1738
-    # Expected: result includes "first to submit" banner
-    def test_first_submission_banner_shown(self):
-        # First where() = puzzle check (returns empty = first submission)
-        # Subsequent where() chains = leaderboard + monthly queries
-        self.mock_db.collection.return_value.where.return_value.stream.return_value = []
-        self.mock_db.collection.return_value.where.return_value.where.return_value.stream.return_value = []
-        print(f"\n[Test data] Puzzle=1738, no existing docs — first submission expected")
+    # Feature 1: Score save — document is written to Firestore
+    # Data: new submission for puzzle 1738
+    # Expected: Firestore set() is called with correct fields
+    def test_save_writes_to_firestore(self):
+        print(f"\n[Test data] Puzzle=1738, Terence=4/6 — expect Firestore doc written")
         parsed = (1738, "Terence", 4, 6, "2026-03-24", "March", "2026")
-        result = self.tracker.save_and_report(parsed)
-        self.assertIn("first to submit", result)
-        self.assertIn("Terence", result)
+        self.tracker.save(parsed)
+        self.mock_db.collection.return_value.document.return_value.set.assert_called_once()
 
     # Feature 2: Player stats — normal case with mixed scores including X
     # Data: Alice has 3/6, 5/6, X/6 in March 2026
