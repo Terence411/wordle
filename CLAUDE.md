@@ -38,14 +38,14 @@ Requires `firebase-key.json` in the project root (Firebase service account crede
 2. On a message starting with `"Wordle"`, it base64-encodes the message and spawns `wordle_firebase.py` as a subprocess
 3. The Python script parses, writes to Firestore, and prints the response between `---Message Start---` / `---Message End---` markers
 4. `bot.js` extracts that output and sends it back to the group as a WhatsApp code block
-5. `bot.js` also runs a scheduled job every Sunday at 23:59 to automatically send the weekly leaderboard
+5. `bot.js` also runs a scheduled job every Sunday at 23:59 to automatically send the current month leaderboard
 
 **Supported commands:**
 | Command | Description |
 |---|---|
 | `Wordle <puzzle> <score>/<max>` | Submit a score — saves to Firestore, returns daily + monthly leaderboard |
 | `Wordle Leaderboard <Month> <Year>` | Monthly leaderboard |
-| `Wordle Leaderboard This Week` | Current week's leaderboard (Mon–Sun) |
+| `Wordle Leaderboard Current` | Leaderboard from 1st of current month to today |
 | `Wordle Stats <name> <Month> <Year>` | Personal stats for a player (names with spaces supported) |
 | `Wordle vs <p1> vs <p2> <Month> <Year> [common]` | Head-to-head comparison; `common` restricts to shared puzzles only |
 
