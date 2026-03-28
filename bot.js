@@ -14,6 +14,8 @@ const client = new Client({
 
 const GROUP_NAME = "Wordle Group";
 
+const log = (msg) => console.log(`${new Date().toISOString().replace('T', ' ').slice(0, 19)} ${msg}`);
+
 let qrGenerated = false;
 
 client.on('qr', qr => {
@@ -23,14 +25,14 @@ client.on('qr', qr => {
     QRCode.toFile('whatsapp-qr.png', qr, { width: 300 }, err => {
         if (err) console.error('Failed to save QR code image:', err);
         else {
-            console.log('QR code saved to whatsapp-qr.png. Scan it with WhatsApp!');
+            log('QR code saved to whatsapp-qr.png. Scan it with WhatsApp!');
             qrGenerated = true;
         }
     });
 });
 
 client.on('ready', () => {
-    console.log('WhatsApp Bot Ready!');
+    log('WhatsApp Bot Ready!');
     fs.unlink('whatsapp-qr.png', err => {
         if (err && err.code !== 'ENOENT') console.error('Failed to delete QR code:', err);
     });
@@ -45,7 +47,7 @@ client.on('message', async message => {
 
         if (message.body.startsWith("Wordle")) {
             const sender = message._data.notifyName || message._data.senderName;
-            console.log(`Detected Wordle from ${sender}`);
+            log(`Detected Wordle from ${sender}`);
 
             // Encode multi-line message to base64
             const encodedMsg = Buffer.from(message.body).toString('base64');
@@ -67,7 +69,7 @@ client.on('message', async message => {
                         console.error('Failed to send message:', err)
                     );
                 } else {
-                    console.log("Leaderboard markers not found in Python output.");
+                    log("Leaderboard markers not found in Python output.");
                 }
             });
         }
@@ -78,7 +80,7 @@ client.on('message', async message => {
 
 // Every Sunday at 23:59 — send the weekly leaderboard automatically
 schedule.scheduleJob('59 23 * * 0', async () => {
-    console.log('Running scheduled weekly leaderboard...');
+    log('Running scheduled weekly leaderboard...');
 
     if (!client.info) {
         console.error('Scheduled job: client not ready.');
@@ -93,7 +95,7 @@ schedule.scheduleJob('59 23 * * 0', async () => {
         return;
     }
 
-    const encodedMsg = Buffer.from('Wordle Leaderboard This Week').toString('base64');
+    const encodedMsg = Buffer.from('Wordle Leaderboard Current').toString('base64');
     const python = spawn('./venv/bin/python3', ['wordle_firebase.py', 'Bot', encodedMsg]);
 
     let output = "";
@@ -105,7 +107,7 @@ schedule.scheduleJob('59 23 * * 0', async () => {
         if (match) {
             group.sendMessage("```" + match[1] + "```");
         } else {
-            console.log("Scheduled job: no output from Python.");
+            log("Scheduled job: no output from Python.");
         }
     });
 });

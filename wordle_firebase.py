@@ -85,12 +85,12 @@ class WordleParser:
             logging.info(f"Parsed stats request for {player_name} in {month_name} {year_str}")
             return (player_name, month_name, year_str), "option_3"
 
-        # Case #4: "Wordle Leaderboard This Week" — must be before Case #2
-        match = re.match(r"Wordle Leaderboard This Week\s*$", message, re.IGNORECASE)
+        # Case #4: "Wordle Leaderboard Current" — must be before Case #2
+        match = re.match(r"Wordle Leaderboard Current\s*$", message, re.IGNORECASE)
         logging.info(f"Case #4 match: {match}")
 
         if match:
-            logging.info("Parsed weekly leaderboard request")
+            logging.info("Parsed current month leaderboard request")
             return None, "option_4"
 
         # Case #2: "Wordle Leaderboard <Month> <Year>"
@@ -275,23 +275,22 @@ class WordleTracker:
         logging.info(f"Generated stats for {player} in {month} {year}")
         return "\n".join(lines)
 
-    def weekly_leaderboard(self):
+    def current_leaderboard(self):
         today = datetime.date.today()
-        monday = today - datetime.timedelta(days=today.weekday())
-        sunday = monday + datetime.timedelta(days=6)
+        first_of_month = today.replace(day=1)
 
-        monday_str = monday.strftime("%Y-%m-%d")
-        sunday_str = sunday.strftime("%Y-%m-%d")
+        first_str = first_of_month.strftime("%Y-%m-%d")
+        today_str = today.strftime("%Y-%m-%d")
 
         results = list(
             self.db.collection("wordle_data")
-            .where(filter=FieldFilter("date", ">=", monday_str))
-            .where(filter=FieldFilter("date", "<=", sunday_str))
+            .where(filter=FieldFilter("date", ">=", first_str))
+            .where(filter=FieldFilter("date", "<=", today_str))
             .stream()
         )
 
         if not results:
-            return f"No entries found for this week ({monday_str} to {sunday_str})."
+            return f"No entries found for this month so far ({first_str} to {today_str})."
 
         scores = {}
         for doc in results:
@@ -301,11 +300,12 @@ class WordleTracker:
 
         sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-        board = [f"🗓️ Weekly Leaderboard ({monday_str} to {sunday_str})"]
+        month_name = today.strftime("%B")
+        board = [f"📅 {month_name} Leaderboard (1st to {today_str})"]
         for i, (player, pts) in enumerate(sorted_scores, start=1):
             board.append(f"{i}. {player} — {pts} pts")
 
-        logging.info(f"Generated weekly leaderboard for {monday_str} to {sunday_str}")
+        logging.info(f"Generated current month leaderboard for {first_str} to {today_str}")
         return "\n".join(board)
 
     def head_to_head(self, players, month, year, common_only):
@@ -419,7 +419,7 @@ def main():
             print("\n---Message Start---\n", output, "\n---Message End---")
 
         case "option_4":
-            output = tracker.weekly_leaderboard()
+            output = tracker.current_leaderboard()
 
             print("\n---Message Start---\n", output, "\n---Message End---")
 

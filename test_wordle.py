@@ -317,21 +317,21 @@ class TestWordleParserNewCommands(unittest.TestCase):
         self.assertIsNone(parsed)
         self.assertIsNone(option)
 
-    # Weekly leaderboard — exact match
-    # Message: "Wordle Leaderboard This Week"
+    # Current month leaderboard — exact match
+    # Message: "Wordle Leaderboard Current"
     # Expected: option_4
-    def test_weekly_leaderboard_command(self):
-        message = "Wordle Leaderboard This Week"
+    def test_current_leaderboard_command(self):
+        message = "Wordle Leaderboard Current"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_4")
         self.assertIsNone(parsed)
 
-    # Weekly leaderboard — case insensitive
-    # Message: "wordle leaderboard this week"
+    # Current month leaderboard — case insensitive
+    # Message: "wordle leaderboard current"
     # Expected: option_4
-    def test_weekly_leaderboard_case_insensitive(self):
-        message = "wordle leaderboard this week"
+    def test_current_leaderboard_case_insensitive(self):
+        message = "wordle leaderboard current"
         print(f"\n[Test message] {repr(message)}")
         _, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_4")
@@ -470,34 +470,32 @@ class TestWordleTrackerNewFeatures(unittest.TestCase):
         result = self.tracker.player_stats("Alice", "January", "2026")
         self.assertIn("No entries found", result)
 
-    # Feature 3: Weekly leaderboard — multiple players, sorted by points
-    # Data: Alice=2/6 (5pts), Bob=4/6 (3pts), same week
+    # Feature 3: Current month leaderboard — multiple players, sorted by points
+    # Data: Alice=2/6 (5pts), Bob=4/6 (3pts), this month
     # Expected: Alice first
     @patch("wordle_firebase.datetime")
-    def test_weekly_leaderboard_sorted(self, mock_dt):
-        mock_dt.date.today.return_value = datetime.date(2026, 3, 24)  # Tuesday
-        mock_dt.timedelta = datetime.timedelta
+    def test_current_leaderboard_sorted(self, mock_dt):
+        mock_dt.date.today.return_value = datetime.date(2026, 3, 24)
         docs = [
             make_firestore_doc("Alice", 2, 6),
             make_firestore_doc("Bob", 4, 6),
         ]
         self._query_mock(docs)
-        print(f"\n[Test data] Alice=2/6 (5pts), Bob=4/6 (3pts) this week")
-        result = self.tracker.weekly_leaderboard()
+        print(f"\n[Test data] Alice=2/6 (5pts), Bob=4/6 (3pts) this month")
+        result = self.tracker.current_leaderboard()
         lines = result.split("\n")
         self.assertIn("Alice", lines[1])
         self.assertIn("Bob", lines[2])
 
-    # Feature 3: Weekly leaderboard — no entries this week
+    # Feature 3: Current month leaderboard — no entries this month
     # Data: empty
     # Expected: "No entries found" message
     @patch("wordle_firebase.datetime")
-    def test_weekly_leaderboard_empty(self, mock_dt):
+    def test_current_leaderboard_empty(self, mock_dt):
         mock_dt.date.today.return_value = datetime.date(2026, 3, 24)
-        mock_dt.timedelta = datetime.timedelta
         self._query_mock([])
-        print(f"\n[Test data] No entries this week")
-        result = self.tracker.weekly_leaderboard()
+        print(f"\n[Test data] No entries this month")
+        result = self.tracker.current_leaderboard()
         self.assertIn("No entries found", result)
 
     # Feature 4: Head-to-head — Alice wins more, Bob has better average
