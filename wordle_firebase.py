@@ -318,7 +318,7 @@ class WordleTracker:
 
         summaries.sort(key=lambda x: x[2] if isinstance(x[2], float) else float('inf'))
 
-        header = f"⚔️  Head-to-Head: {' vs '.join(players)} ({month} {year})"
+        header = f"⚔️  Compare: {' vs '.join(players)} ({month} {year})"
         lines = [header]
 
         if common_only:
@@ -383,16 +383,20 @@ def main():
             output = (
                 "📋 Wordle Bot Commands\n"
                 "\n"
-                "Stats:\n"
-                "  Wordle Stats <name> <Month> <Year>\n"
+                "Wordle Stats <name> <Month> <Year>\n"
+                "  → Your scores, avg, best & failures for the month\n"
                 "\n"
-                "Leaderboards:\n"
-                "  Wordle Leaderboard Current\n"
-                "  Wordle Leaderboard <Month> <Year>\n"
+                "Wordle Leaderboard Current\n"
+                "  → Rankings from 1st of this month to today\n"
                 "\n"
-                "Head-to-head:\n"
-                "  Wordle <p1> vs <p2> <Month> <Year>\n"
-                "  Wordle <p1> vs <p2> <Month> <Year> Common"
+                "Wordle Leaderboard <Month> <Year>\n"
+                "  → Full month rankings\n"
+                "\n"
+                "Wordle <p1> vs <p2> <Month> <Year>\n"
+                "  → Compare games played & avg score\n"
+                "\n"
+                "Wordle <p1> vs <p2> <Month> <Year> Common\n"
+                "  → Compare on shared puzzles only"
             )
             print("\n---Message Start---\n", output, "\n---Message End---")
 
