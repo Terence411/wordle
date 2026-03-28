@@ -55,7 +55,7 @@ client.on('message', async message => {
 
             let output = "";
             python.stdout.on('data', data => output += data.toString());
-            python.stderr.on('data', data => console.error(data.toString()));
+            python.stderr.on('data', data => console.log(data.toString()));
 
             python.on('close', () => {
                 // Extract leaderboard between our markers
