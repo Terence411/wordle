@@ -110,7 +110,7 @@ class WordleParser:
             return month_year_key, "option_4"
 
         # Case #5: "Wordle <player1> vs <player2> [vs ...] <month> <year> [common]"
-        match = re.match(r"Wordle (.+\s+vs\s+.+?)\s+(\w+)\s+(\d{4})(\s+common)?\s*$", message, re.IGNORECASE)
+        match = re.match(r"Wordle (.+\s+vs\s+.+?)\s+(\w+)\s+(\d{4})(\s+Common)?\s*$", message, re.IGNORECASE)
         logging.info(f"Case #5 match: {match}")
 
         if match:
@@ -129,6 +129,14 @@ class WordleParser:
 
             logging.info(f"Parsed head-to-head: {players}, {month_name} {year_str}, common={common_mode}")
             return (players, month_name, year_str, common_mode), "option_5"
+
+        # Case #6: "Wordle List"
+        match = re.match(r"Wordle List\s*$", message, re.IGNORECASE)
+        logging.info(f"Case #6 match: {match}")
+
+        if match:
+            logging.info("Parsed list commands request")
+            return None, "option_6"
 
         return None, None
 
@@ -299,21 +307,6 @@ class WordleTracker:
         else:
             active_data = player_data
 
-        # Count wins on shared puzzles (lowest score wins; ties award no one)
-        wins = {player: 0 for player in players}
-        for puzzle in shared_puzzles:
-            puzzle_scores = {
-                player: player_data[player][puzzle]["score"]
-                for player in players
-                if puzzle in player_data[player]
-            }
-            if not puzzle_scores:
-                continue
-            min_score = min(puzzle_scores.values())
-            winners = [p for p, s in puzzle_scores.items() if s == min_score]
-            if len(winners) == 1:
-                wins[winners[0]] += 1
-
         # Compute per-player stats from active set
         summaries = []
         for player in players:
@@ -321,9 +314,9 @@ class WordleTracker:
             games = len(active)
             valid_scores = [v["score"] for v in active.values() if v["score"] <= v["max_tries"]]
             avg = round(sum(valid_scores) / len(valid_scores), 1) if valid_scores else "N/A"
-            summaries.append((player, games, avg, wins[player]))
+            summaries.append((player, games, avg))
 
-        summaries.sort(key=lambda x: (-x[3], x[2] if isinstance(x[2], float) else float('inf')))
+        summaries.sort(key=lambda x: x[2] if isinstance(x[2], float) else float('inf'))
 
         header = f"⚔️  Head-to-Head: {' vs '.join(players)} ({month} {year})"
         lines = [header]
@@ -331,11 +324,8 @@ class WordleTracker:
         if common_only:
             lines.append(f"(Common puzzles only — {len(shared_puzzles)} shared)")
 
-        for player, games, avg, w in summaries:
-            lines.append(f"{player}: {games} games | avg {avg} | {w} wins")
-
-        if not shared_puzzles:
-            lines.append("(No shared puzzles found — wins not applicable)")
+        for player, games, avg in summaries:
+            lines.append(f"{player}: {games} games | avg {avg}")
 
         logging.info(f"Generated head-to-head for {players} in {month} {year}")
         return "\n".join(lines)
@@ -387,6 +377,23 @@ def main():
             players, month, year, common_mode = parsed
             output = tracker.head_to_head(players, month, year, common_mode)
 
+            print("\n---Message Start---\n", output, "\n---Message End---")
+
+        case "option_6":
+            output = (
+                "📋 Wordle Bot Commands\n"
+                "\n"
+                "Stats:\n"
+                "  Wordle Stats <name> <Month> <Year>\n"
+                "\n"
+                "Leaderboards:\n"
+                "  Wordle Leaderboard Current\n"
+                "  Wordle Leaderboard <Month> <Year>\n"
+                "\n"
+                "Head-to-head:\n"
+                "  Wordle <p1> vs <p2> <Month> <Year>\n"
+                "  Wordle <p1> vs <p2> <Month> <Year> Common"
+            )
             print("\n---Message Start---\n", output, "\n---Message End---")
 
         case _:

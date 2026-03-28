@@ -466,10 +466,10 @@ class TestWordleTrackerNewFeatures(unittest.TestCase):
         result = self.tracker.current_leaderboard()
         self.assertIn("No entries found", result)
 
-    # Feature 4: Head-to-head — Alice wins more, Bob has better average
-    # Data: 2 shared puzzles, Alice wins both
-    # Expected: Alice ranked first with 2 wins
-    def test_h2h_two_players_alice_wins(self):
+    # Feature 4: Head-to-head — Alice has better average score
+    # Data: Alice=2/6+3/6 (avg 2.5), Bob=4/6+5/6 (avg 4.5)
+    # Expected: Alice ranked first (lower avg is better)
+    def test_h2h_two_players_alice_better_avg(self):
         alice_docs = [
             make_firestore_doc("Alice", 2, 6, puzzle=1738),
             make_firestore_doc("Alice", 3, 6, puzzle=1739),
@@ -478,17 +478,16 @@ class TestWordleTrackerNewFeatures(unittest.TestCase):
             make_firestore_doc("Bob", 4, 6, puzzle=1738),
             make_firestore_doc("Bob", 5, 6, puzzle=1739),
         ]
-        # Each player query returns their own docs
         self.mock_db.collection.return_value \
             .where.return_value \
             .where.return_value \
             .where.return_value \
             .stream.side_effect = [alice_docs, bob_docs]
-        print(f"\n[Test data] Alice: 2/6, 3/6 | Bob: 4/6, 5/6 — Alice wins both")
+        print(f"\n[Test data] Alice: 2/6, 3/6 (avg 2.5) | Bob: 4/6, 5/6 (avg 4.5) — Alice ranked first")
         result = self.tracker.head_to_head(["Alice", "Bob"], "March", "2026", False)
         lines = result.split("\n")
-        self.assertIn("Alice", lines[1])   # Alice ranked first
-        self.assertIn("2 wins", lines[1])
+        self.assertIn("Alice", lines[1])
+        self.assertNotIn("wins", result)
 
     # Feature 4: Head-to-head — no shared puzzles
     # Data: Alice and Bob submitted different puzzles
@@ -503,7 +502,8 @@ class TestWordleTrackerNewFeatures(unittest.TestCase):
             .stream.side_effect = [alice_docs, bob_docs]
         print(f"\n[Test data] Alice: puzzle 1738 | Bob: puzzle 1739 — no shared puzzles")
         result = self.tracker.head_to_head(["Alice", "Bob"], "March", "2026", False)
-        self.assertIn("No shared puzzles", result)
+        self.assertIn("Alice", result)
+        self.assertIn("Bob", result)
 
     # Feature 4: Head-to-head common mode — only shared puzzles counted
     # Data: Alice has puzzles 1738+1739, Bob only has 1738
