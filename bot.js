@@ -60,16 +60,19 @@ client.on('message', async message => {
             python.stderr.on('data', data => console.log(data.toString()));
 
             python.on('close', () => {
-                // Extract leaderboard between our markers
-                const match = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
-                if (match) {
-                    const messageContent = match[1];
-                    // Send message back to the group in a code block
-                    chat.sendMessage("```" + messageContent + "```").catch(err =>
+                const reactionMatch = output.match(/---Reaction---\n([\s\S]*?)\n---End Reaction---/);
+                const messageMatch = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
+
+                if (reactionMatch) {
+                    message.react(reactionMatch[1].trim()).catch(err =>
+                        console.error('Failed to react:', err)
+                    );
+                } else if (messageMatch) {
+                    chat.sendMessage("```" + messageMatch[1] + "```").catch(err =>
                         console.error('Failed to send message:', err)
                     );
                 } else {
-                    log("Leaderboard markers not found in Python output.");
+                    log("No output markers found in Python output.");
                 }
             });
         }

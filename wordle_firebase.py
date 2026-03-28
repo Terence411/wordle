@@ -301,7 +301,7 @@ class WordleTracker:
         sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
         month_name = today.strftime("%B")
-        board = [f"📅 {month_name} Leaderboard (1st to {today_str})"]
+        board = [f"📅 {month_name} Leaderboard ({first_str} to {today_str})"]
         for i, (player, pts) in enumerate(sorted_scores, start=1):
             board.append(f"{i}. {player} — {pts} pts")
 
@@ -399,9 +399,10 @@ def main():
         case "option_1":
             duplicate_wordle, output = tracker.duplicate_check(parsed)
             if not duplicate_wordle:
-                output = tracker.save_and_report(parsed)
-
-            print("\n---Message Start---\n", output, "\n---Message End---")
+                tracker.save_and_report(parsed)
+                print("\n---Reaction---\n✅\n---End Reaction---")
+            else:
+                print("\n---Message Start---\n", output, "\n---Message End---")
 
         case "option_2":
             month, year = parsed.split()

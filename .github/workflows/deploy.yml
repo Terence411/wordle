@@ -19,6 +19,6 @@ jobs:
             cd ${{ secrets.EC2_DEPLOY_PATH }}
             git checkout -- .
             git pull origin main
-            npm ci --production
+            npm install --production
             source venv/bin/activate && pip install -r requirements.txt
             pm2 restart wordle-bot
