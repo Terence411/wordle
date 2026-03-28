@@ -17,7 +17,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ${{ secrets.EC2_DEPLOY_PATH }}
+            git checkout -- .
             git pull origin main
-            npm install --production
+            npm ci --production
             source venv/bin/activate && pip install -r requirements.txt
             pm2 restart wordle-bot

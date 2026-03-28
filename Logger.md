@@ -67,3 +67,14 @@ client.on('ready', () => {
 3. Added `.catch()` to `chat.sendMessage()` so a failed send also logs instead of throwing.
 
 ---
+
+### Issue 6 — EC2 git pull blocked by modified package-lock.json after deploy
+
+**Query:** After the GitHub Actions deploy ran, EC2 was still running old code. Manually running `git pull origin main` on EC2 showed: `error: Your local changes to the following files would be overwritten by merge: package-lock.json`.
+
+**Resolution:** The deploy script was running `npm install`, which modifies `package-lock.json` on EC2 as a side effect of resolving dependencies. On the next deploy, `git pull` detected this as a local change and refused to overwrite it, silently leaving the old code in place. Two fixes applied to `.github/workflows/deploy.yml`:
+
+1. Added `git checkout -- .` before `git pull` to discard any stray local changes on EC2 before pulling.
+2. Replaced `npm install` with `npm ci` — designed for CI/CD environments, it installs exactly from `package-lock.json` without modifying it.
+
+---
