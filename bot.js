@@ -1,4 +1,4 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const QRCode = require('qrcode'); // use this package for image QR codes
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -62,8 +62,14 @@ client.on('message', async message => {
             python.on('close', () => {
                 const reactionMatch = output.match(/---Reaction---\n([\s\S]*?)\n---End Reaction---/);
                 const messageMatch = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
+                const imageMatch = output.match(/---Image Start---\n([\s\S]*?)\n---Image End---/);
 
-                if (reactionMatch) {
+                if (imageMatch) {
+                    const media = new MessageMedia('image/png', imageMatch[1].trim(), 'wordle-commands.png');
+                    chat.sendMessage(media).catch(err =>
+                        console.error('Failed to send image:', err)
+                    );
+                } else if (reactionMatch) {
                     message.react(reactionMatch[1].trim()).catch(err =>
                         console.error('Failed to react:', err)
                     );

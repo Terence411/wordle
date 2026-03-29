@@ -2,11 +2,13 @@ import re
 import datetime
 import sys
 import base64
+import io
 import requests
 import logging
 import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
+from PIL import Image, ImageDraw, ImageFont
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(message)s",
@@ -331,6 +333,26 @@ class WordleTracker:
         return "\n".join(lines)
 
 
+def make_list_image(text):
+    font = ImageFont.load_default()
+    lines = text.split("\n")
+    padding = 20
+    line_height = 18
+    width = 420
+    height = padding * 2 + line_height * len(lines)
+
+    img = Image.new("RGB", (width, height), color=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    y = padding
+    for line in lines:
+        draw.text((padding, y), line, fill=(30, 30, 30), font=font)
+        y += line_height
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode()
+
+
 def main():
     if len(sys.argv) != 3:
         print("Usage: python wordle.py <sender> <message>")
@@ -380,7 +402,7 @@ def main():
             print("\n---Message Start---\n", output, "\n---Message End---")
 
         case "option_6":
-            output = (
+            text = (
                 "📋 Wordle Bot Commands\n"
                 "\n"
                 "Wordle Stats <name> <Month> <Year>\n"
@@ -398,7 +420,7 @@ def main():
                 "Wordle <p1> vs <p2> <Month> <Year> Common\n"
                 "  → Compare on shared puzzles only"
             )
-            print("\n---Message Start---\n", output, "\n---Message End---")
+            print("\n---Image Start---\n", make_list_image(text), "\n---Image End---")
 
         case _:
             logging.info("No valid Wordle data found in the message.")
