@@ -1,3 +1,2 @@
 firebase-admin
 requests
-Pillow
