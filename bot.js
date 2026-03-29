@@ -126,4 +126,9 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled rejection at:', promise, 'reason:', reason);
 });
 
+client.on('disconnected', (reason) => {
+    log(`WhatsApp disconnected: ${reason}. Restarting...`);
+    process.exit(1);
+});
+
 client.initialize();
