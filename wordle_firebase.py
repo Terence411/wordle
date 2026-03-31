@@ -109,9 +109,25 @@ class WordleParser:
             logging.info(f"Parsed leaderboard request for {month_year_key}")
             return month_year_key, "option_4"
 
-        # Case #5: "Wordle <player1> vs <player2> [vs ...] <month> <year> [common]"
-        match = re.match(r"Wordle (.+\s+vs\s+.+?)\s+(\w+)\s+(\d{4})(\s+Common)?\s*$", message, re.IGNORECASE)
+        # Case #5: "Wordle Compare All <month> <year> [Common]"
+        match = re.match(r"Wordle Compare All\s+(\w+)\s+(\d{4})(\s+Common)?\s*$", message, re.IGNORECASE)
         logging.info(f"Case #5 match: {match}")
+
+        if match:
+            month_name = match.group(1).capitalize()
+            year_str = match.group(2)
+            common_mode = match.group(3) is not None
+
+            if month_name not in VALID_MONTHS:
+                logging.info(f"Invalid month detected: {month_name}")
+                return None, None
+
+            logging.info(f"Parsed compare all: {month_name} {year_str}, common={common_mode}")
+            return (month_name, year_str, common_mode), "option_5"
+
+        # Case #6: "Wordle Compare <player1> vs <player2> [vs ...] <month> <year> [Common]"
+        match = re.match(r"Wordle Compare (.+\s+vs\s+.+?)\s+(\w+)\s+(\d{4})(\s+Common)?\s*$", message, re.IGNORECASE)
+        logging.info(f"Case #6 match: {match}")
 
         if match:
             players = [p.strip().split()[0] for p in re.split(r'\s+vs\s+', match.group(1), flags=re.IGNORECASE)]
@@ -124,19 +140,19 @@ class WordleParser:
                 return None, None
 
             if len(players) < 2:
-                logging.info("Head-to-head requires at least 2 players")
+                logging.info("Compare requires at least 2 players")
                 return None, None
 
-            logging.info(f"Parsed head-to-head: {players}, {month_name} {year_str}, common={common_mode}")
-            return (players, month_name, year_str, common_mode), "option_5"
+            logging.info(f"Parsed compare: {players}, {month_name} {year_str}, common={common_mode}")
+            return (players, month_name, year_str, common_mode), "option_6"
 
-        # Case #6: "Wordle List"
+        # Case #7: "Wordle List"
         match = re.match(r"Wordle List\s*$", message, re.IGNORECASE)
-        logging.info(f"Case #6 match: {match}")
+        logging.info(f"Case #7 match: {match}")
 
         if match:
             logging.info("Parsed list commands request")
-            return None, "option_6"
+            return None, "option_7"
 
         return None, None
 
@@ -275,6 +291,18 @@ class WordleTracker:
         logging.info(f"Generated current month leaderboard for {first_str} to {today_str}")
         return "\n".join(board)
 
+    def compare_all(self, month, year, common_only):
+        results = list(
+            self.db.collection("wordle_data")
+            .where(filter=FieldFilter("month", "==", month))
+            .where(filter=FieldFilter("year", "==", year))
+            .stream()
+        )
+        players = sorted(set(doc.to_dict()["player"] for doc in results))
+        if not players:
+            return f"No entries found for {month} {year}."
+        return self.head_to_head(players, month, year, common_only)
+
     def head_to_head(self, players, month, year, common_only):
         # Fetch each player's submissions for the month as {puzzle: {score, max_tries}}
         player_data = {}
@@ -377,12 +405,18 @@ def main():
             print("\n---Message Start---\n", output, "\n---Message End---")
 
         case "option_5":
+            month, year, common_mode = parsed
+            output = tracker.compare_all(month, year, common_mode)
+
+            print("\n---Message Start---\n", output, "\n---Message End---")
+
+        case "option_6":
             players, month, year, common_mode = parsed
             output = tracker.head_to_head(players, month, year, common_mode)
 
             print("\n---Message Start---\n", output, "\n---Message End---")
 
-        case "option_6":
+        case "option_7":
             output = (
                 "📋 Wordle Bot Commands\n"
                 "\n"
@@ -395,11 +429,17 @@ def main():
                 "Wordle Leaderboard <Month> <Year>\n"
                 "  → Full month rankings\n"
                 "\n"
-                "Wordle <p1> vs <p2> <Month> <Year>\n"
+                "Wordle Compare <p1> vs <p2> <Month> <Year>\n"
                 "  → Compare games played & avg score\n"
                 "\n"
-                "Wordle <p1> vs <p2> <Month> <Year> Common\n"
-                "  → Compare on shared puzzles only"
+                "Wordle Compare <p1> vs <p2> <Month> <Year> Common\n"
+                "  → Compare on shared puzzles only\n"
+                "\n"
+                "Wordle Compare All <Month> <Year>\n"
+                "  → Compare all players for the month\n"
+                "\n"
+                "Wordle Compare All <Month> <Year> Common\n"
+                "  → Compare all players on shared puzzles only"
             )
             print("\n---Plain Start---\n" + output + "\n---Plain End---")
 

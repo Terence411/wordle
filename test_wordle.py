@@ -307,58 +307,82 @@ class TestWordleParserNewCommands(unittest.TestCase):
         _, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_3")
 
-    # Head-to-head — two single-word names
-    # Message: "Wordle Alice vs Bob March 2026"
-    # Expected: option_5, players=["Alice","Bob"], common=False
-    def test_h2h_two_players(self):
-        message = "Wordle Alice vs Bob March 2026"
+    # Compare All — basic
+    # Message: "Wordle Compare All March 2026"
+    # Expected: option_5, month="March", year="2026", common=False
+    def test_compare_all_basic(self):
+        message = "Wordle Compare All March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_5")
+        month, year, common = parsed
+        self.assertEqual(month, "March")
+        self.assertEqual(year, "2026")
+        self.assertFalse(common)
+
+    # Compare All — with Common
+    # Message: "Wordle Compare All March 2026 Common"
+    # Expected: option_5, common=True
+    def test_compare_all_common(self):
+        message = "Wordle Compare All March 2026 Common"
+        print(f"\n[Test message] {repr(message)}")
+        parsed, option = WordleParser.parse("Bot", message)
+        self.assertEqual(option, "option_5")
+        _, _, common = parsed
+        self.assertTrue(common)
+
+    # Compare — two single-word names
+    # Message: "Wordle Compare Alice vs Bob March 2026"
+    # Expected: option_6, players=["Alice","Bob"], common=False
+    def test_h2h_two_players(self):
+        message = "Wordle Compare Alice vs Bob March 2026"
+        print(f"\n[Test message] {repr(message)}")
+        parsed, option = WordleParser.parse("Bot", message)
+        self.assertEqual(option, "option_6")
         players, month, year, common = parsed
         self.assertEqual(players, ["Alice", "Bob"])
         self.assertEqual(month, "March")
         self.assertEqual(year, "2026")
         self.assertFalse(common)
 
-    # Head-to-head — first word taken when multi-word names used + common mode
-    # Message: "Wordle John Doe vs Alice Smith March 2026 common"
-    # Expected: option_5, players=["John","Alice"], common=True
+    # Compare — first word taken when multi-word names used + common mode
+    # Message: "Wordle Compare John Doe vs Alice Smith March 2026 common"
+    # Expected: option_6, players=["John","Alice"], common=True
     def test_h2h_names_with_spaces_and_common(self):
-        message = "Wordle John Doe vs Alice Smith March 2026 common"
+        message = "Wordle Compare John Doe vs Alice Smith March 2026 common"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
-        self.assertEqual(option, "option_5")
+        self.assertEqual(option, "option_6")
         players, month, year, common = parsed
         self.assertEqual(players, ["John", "Alice"])
         self.assertTrue(common)
 
-    # Head-to-head — three players
-    # Message: "Wordle Alice vs Bob vs Carol March 2026"
-    # Expected: option_5, players=["Alice","Bob","Carol"]
+    # Compare — three players
+    # Message: "Wordle Compare Alice vs Bob vs Carol March 2026"
+    # Expected: option_6, players=["Alice","Bob","Carol"]
     def test_h2h_three_players(self):
-        message = "Wordle Alice vs Bob vs Carol March 2026"
+        message = "Wordle Compare Alice vs Bob vs Carol March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
-        self.assertEqual(option, "option_5")
+        self.assertEqual(option, "option_6")
         players, _, _, _ = parsed
         self.assertEqual(players, ["Alice", "Bob", "Carol"])
 
-    # Head-to-head — single player (no "vs") should be rejected
-    # Message: "Wordle Alice March 2026"
-    # Expected: rejected, returns (None, None) — no "vs" means regex doesn't match
+    # Compare — single player (no "vs") should be rejected
+    # Message: "Wordle Compare Alice March 2026"
+    # Expected: rejected, returns (None, None)
     def test_h2h_single_player_rejected(self):
-        message = "Wordle Alice March 2026"
+        message = "Wordle Compare Alice March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertIsNone(parsed)
         self.assertIsNone(option)
 
-    # Head-to-head — invalid month
-    # Message: "Wordle Alice vs Bob Octember 2026"
+    # Compare — invalid month
+    # Message: "Wordle Compare Alice vs Bob Octember 2026"
     # Expected: rejected, returns (None, None)
     def test_h2h_invalid_month(self):
-        message = "Wordle Alice vs Bob Octember 2026"
+        message = "Wordle Compare Alice vs Bob Octember 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertIsNone(parsed)
