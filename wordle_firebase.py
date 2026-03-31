@@ -339,7 +339,7 @@ def main():
         print("Usage: python wordle.py <sender> <message>")
         return
 
-    sender = sys.argv[1]
+    sender = sys.argv[1].split()[0]
     message = base64.b64decode(sys.argv[2]).decode('utf-8')
     logging.info(f"Decoded message: {message}")
 
