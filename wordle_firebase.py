@@ -70,7 +70,7 @@ class WordleParser:
             return (puzzle, player, score_val, max_tries, puzzle_date_reformatted, month, year), "option_1"
 
         # Case #2: "Wordle Stats <name> <month> <year>"
-        match = re.match(r"Wordle Stats (.+?)\s+(\w+)\s+(\d{4})\s*$", message, re.IGNORECASE)
+        match = re.match(r"Wordle Stats (\w+)\s+(\w+)\s+(\d{4})\s*$", message, re.IGNORECASE)
         logging.info(f"Case #2 match: {match}")
 
         if match:
@@ -114,7 +114,7 @@ class WordleParser:
         logging.info(f"Case #5 match: {match}")
 
         if match:
-            players = [p.strip() for p in re.split(r'\s+vs\s+', match.group(1), flags=re.IGNORECASE)]
+            players = [p.strip().split()[0] for p in re.split(r'\s+vs\s+', match.group(1), flags=re.IGNORECASE)]
             month_name = match.group(2).capitalize()
             year_str = match.group(3)
             common_mode = match.group(4) is not None
@@ -324,8 +324,11 @@ class WordleTracker:
         if common_only:
             lines.append(f"(Common puzzles only — {len(shared_puzzles)} shared)")
 
+        max_name_len = max(len(p) for p, _, _ in summaries)
+        max_games_len = max(len(str(g)) for _, g, _ in summaries)
+
         for player, games, avg in summaries:
-            lines.append(f"{player}: {games} games | avg {avg}")
+            lines.append(f"{player.ljust(max_name_len)}: {str(games).rjust(max_games_len)} games | avg {avg}")
 
         logging.info(f"Generated head-to-head for {players} in {month} {year}")
         return "\n".join(lines)
@@ -383,7 +386,7 @@ def main():
             output = (
                 "📋 Wordle Bot Commands\n"
                 "\n"
-                "Wordle Stats <name> <Month> <Year>\n"
+                "Wordle Stats <Name> <Month> <Year>\n"
                 "  → Your scores, avg, best & failures for the month\n"
                 "\n"
                 "Wordle Leaderboard Current\n"
@@ -398,7 +401,7 @@ def main():
                 "Wordle <p1> vs <p2> <Month> <Year> Common\n"
                 "  → Compare on shared puzzles only"
             )
-            print("\n---Message Start---\n", output, "\n---Message End---")
+            print("\n---Plain Start---\n" + output + "\n---Plain End---")
 
         case _:
             logging.info("No valid Wordle data found in the message.")

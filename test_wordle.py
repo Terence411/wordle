@@ -268,17 +268,15 @@ class TestWordleParserNewCommands(unittest.TestCase):
         self.assertEqual(month, "March")
         self.assertEqual(year, "2026")
 
-    # Stats command — name with spaces
+    # Stats command — multi-word name is rejected (only single word accepted)
     # Message: "Wordle Stats John Doe March 2026"
-    # Expected: option_2, player="John Doe"
+    # Expected: not matched, returns (None, None)
     def test_stats_name_with_spaces(self):
         message = "Wordle Stats John Doe March 2026"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
-        self.assertEqual(option, "option_2")
-        player, month, year = parsed
-        self.assertEqual(player, "John Doe")
-        self.assertEqual(month, "March")
+        self.assertIsNone(parsed)
+        self.assertIsNone(option)
 
     # Stats command — invalid month
     # Message: "Wordle Stats Alice Octember 2026"
@@ -323,16 +321,16 @@ class TestWordleParserNewCommands(unittest.TestCase):
         self.assertEqual(year, "2026")
         self.assertFalse(common)
 
-    # Head-to-head — names with spaces + common mode
+    # Head-to-head — first word taken when multi-word names used + common mode
     # Message: "Wordle John Doe vs Alice Smith March 2026 common"
-    # Expected: option_5, players=["John Doe","Alice Smith"], common=True
+    # Expected: option_5, players=["John","Alice"], common=True
     def test_h2h_names_with_spaces_and_common(self):
         message = "Wordle John Doe vs Alice Smith March 2026 common"
         print(f"\n[Test message] {repr(message)}")
         parsed, option = WordleParser.parse("Bot", message)
         self.assertEqual(option, "option_5")
         players, month, year, common = parsed
-        self.assertEqual(players, ["John Doe", "Alice Smith"])
+        self.assertEqual(players, ["John", "Alice"])
         self.assertTrue(common)
 
     # Head-to-head — three players

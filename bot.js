@@ -62,10 +62,15 @@ client.on('message', async message => {
             python.on('close', () => {
                 const reactionMatch = output.match(/---Reaction---\n([\s\S]*?)\n---End Reaction---/);
                 const messageMatch = output.match(/---Message Start---\n([\s\S]*?)\n---Message End---/);
+                const plainMatch = output.match(/---Plain Start---\n([\s\S]*?)\n---Plain End---/);
 
                 if (reactionMatch) {
                     message.react(reactionMatch[1].trim()).catch(err =>
                         console.error('Failed to react:', err)
+                    );
+                } else if (plainMatch) {
+                    chat.sendMessage(plainMatch[1].trim()).catch(err =>
+                        console.error('Failed to send plain message:', err)
                     );
                 } else if (messageMatch) {
                     chat.sendMessage("```" + messageMatch[1] + "```").catch(err =>
