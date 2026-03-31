@@ -12,7 +12,7 @@ const client = new Client({
     }
 });
 
-const GROUP_NAME = "Wordle Group";
+const GROUP_NAME = "The wordlers ++";
 
 const log = (msg) => console.log(`${new Date().toISOString().replace('T', ' ').slice(0, 19)} ${msg}`);
 
