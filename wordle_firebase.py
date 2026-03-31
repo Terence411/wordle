@@ -169,7 +169,7 @@ class WordleTracker:
     def duplicate_check(self, parsed):
         puzzle, player, score_val, max_tries, date, month, year = parsed
 
-        results_ref = self.db.collection("wordle_data")
+        results_ref = self.db.collection("wordle_entries")
         query = results_ref.where(filter=FieldFilter("puzzle", "==", puzzle)).where(filter=FieldFilter("player", "==", player)).stream()
         docs = list(query)
 
@@ -189,7 +189,7 @@ class WordleTracker:
 
     def monthly_totals(self, month, year):
         results = (
-            self.db.collection("wordle_data")
+            self.db.collection("wordle_entries")
             .where(filter=FieldFilter("month", "==", month))
             .where(filter=FieldFilter("year", "==", year))
             .stream()
@@ -213,7 +213,7 @@ class WordleTracker:
     def save(self, parsed):
         puzzle, player, score_val, max_tries, date, month, year = parsed
 
-        doc_ref = self.db.collection("wordle_data").document(f"{puzzle}_{player}")
+        doc_ref = self.db.collection("wordle_entries").document(f"{puzzle}_{player}")
         doc_ref.set({
             "puzzle": puzzle,
             "player": player,
@@ -227,7 +227,7 @@ class WordleTracker:
 
     def player_stats(self, player, month, year):
         results = list(
-            self.db.collection("wordle_data")
+            self.db.collection("wordle_entries")
             .where(filter=FieldFilter("player", "==", player))
             .where(filter=FieldFilter("month", "==", month))
             .where(filter=FieldFilter("year", "==", year))
@@ -266,7 +266,7 @@ class WordleTracker:
         today_str = today.strftime("%Y-%m-%d")
 
         results = list(
-            self.db.collection("wordle_data")
+            self.db.collection("wordle_entries")
             .where(filter=FieldFilter("date", ">=", first_str))
             .where(filter=FieldFilter("date", "<=", today_str))
             .stream()
@@ -293,7 +293,7 @@ class WordleTracker:
 
     def compare_all(self, month, year, common_only):
         results = list(
-            self.db.collection("wordle_data")
+            self.db.collection("wordle_entries")
             .where(filter=FieldFilter("month", "==", month))
             .where(filter=FieldFilter("year", "==", year))
             .stream()
@@ -308,7 +308,7 @@ class WordleTracker:
         player_data = {}
         for player in players:
             results = list(
-                self.db.collection("wordle_data")
+                self.db.collection("wordle_entries")
                 .where(filter=FieldFilter("player", "==", player))
                 .where(filter=FieldFilter("month", "==", month))
                 .where(filter=FieldFilter("year", "==", year))

@@ -54,6 +54,6 @@ Requires `firebase-key.json` in the project root (Firebase service account crede
 - `WordleParser` — static methods only; parses messages and resolves puzzle numbers to dates via the NYT API
 - `WordleTracker` — owns `self.db`; all Firestore operations (save, leaderboard, stats, head-to-head)
 
-**Firestore collection:** `wordle_data`, documents keyed as `{puzzle}_{player}`. Fields: `puzzle`, `player`, `score`, `max_tries`, `date`, `month`, `year`.
+**Firestore collection:** `wordle_entries`, documents keyed as `{puzzle}_{player}`. Fields: `puzzle`, `player`, `score`, `max_tries`, `date`, `month`, `year`.
 
 **Scoring:** `max_tries - score + 1` per puzzle (higher = better). Failed attempts (X) score 0 points.
