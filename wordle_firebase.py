@@ -17,7 +17,7 @@ VALID_MONTHS = [
     "July", "August", "September", "October", "November", "December"
 ]
 
-
+# 
 class WordleParser:
     """Handles parsing of incoming WhatsApp messages. No database interaction."""
 
